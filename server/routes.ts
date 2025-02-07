@@ -48,15 +48,24 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/documents", async (req, res) => {
     try {
       const userId = req.session.userId;
-      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      if (!userId) {
+        return res.status(401).json({ 
+          error: "Unauthorized",
+          message: "Please sign in with Google to access your documents"
+        });
+      }
 
       const user = await storage.getUser(userId);
-      const googleDocs = await google.listDocuments(user!.accessToken);
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
+
+      const googleDocs = await google.listDocuments(user.accessToken);
       const localDocs = await storage.getUserDocuments(userId);
 
       res.json({
-        google: googleDocs,
-        local: localDocs
+        google: googleDocs || [],
+        local: localDocs || []
       });
     } catch (error) {
       console.error("List documents error:", error);
@@ -67,7 +76,9 @@ export function registerRoutes(app: Express): Server {
   app.post("/api/documents", async (req, res) => {
     try {
       const userId = req.session.userId;
-      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
 
       const data = insertDocumentSchema.parse(req.body);
       const document = await storage.createDocument({
@@ -93,8 +104,20 @@ export function registerRoutes(app: Express): Server {
 
   app.get("/api/documents/:id", async (req, res) => {
     try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
       const document = await storage.getDocument(parseInt(req.params.id));
-      if (!document) return res.status(404).json({ error: "Document not found" });
+      if (!document) {
+        return res.status(404).json({ error: "Document not found" });
+      }
+
+      // Verify document ownership
+      if (document.userId !== userId) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
 
       const suggestions = await storage.getDocumentSuggestions(document.id);
       res.json({ document, suggestions });
@@ -106,9 +129,21 @@ export function registerRoutes(app: Express): Server {
 
   app.post("/api/documents/:id/suggestions", async (req, res) => {
     try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
       const documentId = parseInt(req.params.id);
       const document = await storage.getDocument(documentId);
-      if (!document) return res.status(404).json({ error: "Document not found" });
+
+      if (!document) {
+        return res.status(404).json({ error: "Document not found" });
+      }
+
+      if (document.userId !== userId) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
 
       const { type } = req.body;
       let content: string;
@@ -136,6 +171,44 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Create suggestion error:", error);
       res.status(500).json({ error: "Failed to create suggestion" });
+    }
+  });
+
+  app.put("/api/documents/:id", async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const documentId = parseInt(req.params.id);
+      const document = await storage.getDocument(documentId);
+
+      if (!document) {
+        return res.status(404).json({ error: "Document not found" });
+      }
+
+      if (document.userId !== userId) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+
+      const { title, content } = req.body;
+      const updated = await storage.updateDocument(documentId, content);
+
+      // If this is a Google Doc, sync the changes
+      if (document.googleDocId) {
+        const user = await storage.getUser(userId);
+        await google.updateDocument(
+          user!.accessToken,
+          document.googleDocId,
+          JSON.stringify(content)
+        );
+      }
+
+      res.json(updated);
+    } catch (error) {
+      console.error("Update document error:", error);
+      res.status(500).json({ error: "Failed to update document" });
     }
   });
 

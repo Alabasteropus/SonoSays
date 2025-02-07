@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Save, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Document, AiSuggestion } from "@shared/schema";
 
 interface DocumentResponse {
@@ -23,7 +23,7 @@ export default function Document() {
   const [content, setContent] = useState("");
 
   // Fetch document data
-  const { data, isLoading } = useQuery<DocumentResponse>({
+  const { data, isLoading, error } = useQuery<DocumentResponse>({
     queryKey: [`/api/documents/${params?.id}`],
     enabled: !!params?.id,
   });
@@ -31,7 +31,7 @@ export default function Document() {
   useEffect(() => {
     if (data?.document) {
       setTitle(data.document.title);
-      setContent(data.document.content);
+      setContent(JSON.stringify(data.document.content));
     }
   }, [data]);
 
@@ -39,9 +39,9 @@ export default function Document() {
   const save = useMutation({
     mutationFn: async () => {
       const res = await apiRequest(
-        "POST", 
+        "PUT", 
         `/api/documents/${params?.id}`,
-        { title, content }
+        { title, content: JSON.parse(content) }
       );
       return res.json();
     },
@@ -50,6 +50,8 @@ export default function Document() {
         title: "Saved",
         description: "Document saved successfully"
       });
+      // Invalidate the document cache to refetch latest data
+      queryClient.invalidateQueries({ queryKey: [`/api/documents/${params?.id}`] });
     },
     onError: () => {
       toast({
@@ -65,8 +67,25 @@ export default function Document() {
   };
 
   const handleAISuggestion = (suggestion: string) => {
-    setContent(prev => prev + "\n" + suggestion);
+    setContent(prev => {
+      const content = JSON.parse(prev || "{}");
+      return JSON.stringify({
+        ...content,
+        text: (content.text || "") + "\n" + suggestion
+      });
+    });
   };
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <h2 className="text-2xl font-bold text-destructive mb-4">Error Loading Document</h2>
+        <p className="text-muted-foreground">
+          {error instanceof Error ? error.message : "Please make sure you're signed in and have access to this document."}
+        </p>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
