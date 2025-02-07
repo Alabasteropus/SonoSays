@@ -16,6 +16,10 @@ import {
   REDO_COMMAND,
 } from "lexical";
 import { $getRoot, $createParagraphNode, EditorThemeClasses } from "lexical";
+import { HeadingNode } from "@lexical/rich-text";
+import { ListItemNode, ListNode } from "@lexical/list";
+import { LinkNode } from "@lexical/link";
+import { TableCellNode, TableNode, TableRowNode } from "@lexical/table";
 import { initializeEditor, getEditorContent, setEditorContent } from "@/lib/editor";
 import { Button } from "@/components/ui/button";
 import {
@@ -101,9 +105,20 @@ const theme: EditorThemeClasses = {
 };
 
 export function Editor({ initialContent, onChange }: EditorProps) {
+  const nodes = [
+    HeadingNode,
+    ListNode,
+    ListItemNode,
+    LinkNode,
+    TableNode,
+    TableCellNode,
+    TableRowNode
+  ];
+
   const config = {
     namespace: "WriteWithAI",
     theme,
+    nodes,
     onError: (error: Error) => {
       console.error("Editor Error:", error);
     }
@@ -130,7 +145,7 @@ export function Editor({ initialContent, onChange }: EditorProps) {
       } else if (format === "redo") {
         editor.dispatchCommand(REDO_COMMAND, undefined);
       } else {
-        editor.dispatchCommand(FORMAT_TEXT_COMMAND, format);
+        editor.dispatchCommand(FORMAT_TEXT_COMMAND, format as any);
       }
     });
   };

@@ -1,22 +1,24 @@
 import { createEditor, $getRoot, $createParagraphNode } from "lexical";
 import { $generateHtmlFromNodes, $generateNodesFromDOM } from "@lexical/html";
-import { $createHeadingNode, HeadingNode } from "@lexical/rich-text";
+import { HeadingNode } from "@lexical/rich-text";
 import { ListItemNode, ListNode } from "@lexical/list";
 import { LinkNode } from "@lexical/link";
 import { TableCellNode, TableNode, TableRowNode } from "@lexical/table";
 
+const nodes = [
+  HeadingNode,
+  ListNode,
+  ListItemNode,
+  LinkNode,
+  TableNode,
+  TableCellNode,
+  TableRowNode
+];
+
 export function initializeEditor() {
   const editor = createEditor({
     namespace: "WriteWithAI",
-    nodes: [
-      HeadingNode,
-      ListNode,
-      ListItemNode,
-      LinkNode,
-      TableNode,
-      TableCellNode,
-      TableRowNode
-    ],
+    nodes: nodes,
     onError: (error) => {
       console.error("Editor Error:", error);
     }
