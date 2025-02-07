@@ -27,6 +27,19 @@ export class MemStorage implements IStorage {
     this.documents = new Map();
     this.suggestions = new Map();
     this.currentId = 1;
+
+    // Add some test documents
+    const testDocs = Array.from({ length: 15 }, (_, i) => ({
+      id: i + 1,
+      title: `Test Document ${i + 1}`,
+      content: { text: `This is test document ${i + 1}` },
+      lastModified: new Date(Date.now() - i * 60000) // Each doc 1 minute apart
+    }));
+
+    testDocs.forEach(doc => {
+      this.documents.set(doc.id, doc);
+    });
+    this.currentId = testDocs.length + 1;
   }
 
   async getDocument(id: number): Promise<Document | undefined> {
