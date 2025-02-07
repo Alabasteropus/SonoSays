@@ -11,3 +11,69 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+@layer components {
+  .editor-container {
+    @apply max-w-[8.5in] mx-auto;
+  }
+
+  .page-container {
+    @apply bg-card shadow-lg mb-8 relative;
+    min-height: 11in;
+    padding: 1in 1.25in;
+    width: 8.5in;
+  }
+
+  .editor-input {
+    @apply outline-none min-h-[9in] prose prose-sm dark:prose-invert max-w-none;
+  }
+
+  .editor-placeholder {
+    @apply absolute top-[1in] left-[1.25in] text-muted-foreground pointer-events-none;
+  }
+
+  .editor-paragraph {
+    @apply my-4;
+  }
+
+  /* Rich text styling */
+  .editor-text-bold {
+    @apply font-bold;
+  }
+
+  .editor-text-italic {
+    @apply italic;
+  }
+
+  .editor-text-underline {
+    @apply underline;
+  }
+
+  .editor-text-strikethrough {
+    @apply line-through;
+  }
+
+  .editor-heading-h1 {
+    @apply text-4xl font-bold mt-8 mb-4;
+  }
+
+  .editor-heading-h2 {
+    @apply text-3xl font-bold mt-6 mb-3;
+  }
+
+  .editor-list-ol {
+    @apply list-decimal pl-6 my-4;
+  }
+
+  .editor-list-ul {
+    @apply list-disc pl-6 my-4;
+  }
+
+  .editor-listitem {
+    @apply my-1;
+  }
+
+  .editor-link {
+    @apply text-primary underline;
+  }
+}

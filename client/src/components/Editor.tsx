@@ -42,7 +42,7 @@ const theme: EditorThemeClasses = {
   ltr: "ltr",
   rtl: "rtl",
   placeholder: "editor-placeholder",
-  paragraph: "editor-paragraph",
+  paragraph: "editor-paragraph my-4",
   quote: "editor-quote",
   heading: {
     h1: "editor-heading-h1",
@@ -101,7 +101,9 @@ const theme: EditorThemeClasses = {
     tag: "editor-tokenProperty",
     url: "editor-tokenOperator",
     variable: "editor-tokenVariable"
-  }
+  },
+  root: "editor-root",
+  page: "editor-page"
 };
 
 export function Editor({ initialContent, onChange }: EditorProps) {
@@ -220,27 +222,31 @@ export function Editor({ initialContent, onChange }: EditorProps) {
           </Button>
         </div>
 
-        <div className="p-4 min-h-[300px]">
-          <RichTextPlugin
-            contentEditable={
-              <ContentEditable className="outline-none min-h-[250px]" />
-            }
-            placeholder={
-              <div className="absolute top-[68px] left-[24px] text-muted-foreground">
-                Start writing...
-              </div>
-            }
-            ErrorBoundary={() => null}
-          />
-          <HistoryPlugin />
-          <AutoFocusPlugin />
-          <OnChangePlugin onChange={handleChange} />
-          <TabIndentationPlugin />
-          <LinkPlugin />
-          <ListPlugin />
-          <TablePlugin />
+        <div className="p-4 min-h-[842px] bg-muted overflow-auto">
+          <div className="editor-container mx-auto">
+            <div className="page-container">
+              <RichTextPlugin
+                contentEditable={
+                  <ContentEditable className="editor-input" />
+                }
+                placeholder={
+                  <div className="editor-placeholder">
+                    Start writing...
+                  </div>
+                }
+                ErrorBoundary={() => null}
+              />
+            </div>
+          </div>
         </div>
       </div>
+      <HistoryPlugin />
+      <AutoFocusPlugin />
+      <OnChangePlugin onChange={handleChange} />
+      <TabIndentationPlugin />
+      <LinkPlugin />
+      <ListPlugin />
+      <TablePlugin />
     </LexicalComposer>
   );
 }
