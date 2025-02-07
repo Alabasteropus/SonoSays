@@ -1,7 +1,6 @@
 import { DocumentList } from "@/components/DocumentList";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { SiGoogledocs } from "react-icons/si";
-import { Sparkles } from "lucide-react";
+import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Pencil, Sparkles } from "lucide-react";
 
 export default function Home() {
   return (
@@ -12,7 +11,7 @@ export default function Home() {
           Welcome to WriteWithAI
         </h1>
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-          An AI-enhanced writing platform that seamlessly integrates with Google Docs
+          An AI-enhanced writing platform that helps you write better content
         </p>
       </div>
 
@@ -21,11 +20,11 @@ export default function Home() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <SiGoogledocs className="w-5 h-5" />
-              Google Docs Integration
+              <Pencil className="w-5 h-5" />
+              Rich Text Editor
             </CardTitle>
             <CardDescription>
-              Seamlessly sync your documents with Google Docs for anywhere access
+              Write and format your content with our powerful editor
             </CardDescription>
           </CardHeader>
         </Card>
