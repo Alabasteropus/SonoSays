@@ -76,36 +76,40 @@ export function Editor({ initialContent, onChange }: EditorProps) {
   }, [editor, initialContent]);
 
   useEffect(() => {
-    const updatePageNumbers = () => {
+    const calculatePages = () => {
       if (!contentRef.current) return;
 
-      // Get the content element's position and dimensions
+      // Remove existing page numbers
+      const existingNumbers = contentRef.current.querySelectorAll('.page-number');
+      existingNumbers.forEach(num => num.remove());
+
+      // Get content height and calculate pages
       const content = contentRef.current;
-      const contentRect = content.getBoundingClientRect();
-      const columnWidth = contentRect.width;
-      const columnCount = Math.ceil(content.scrollWidth / columnWidth);
+      const contentHeight = content.scrollHeight;
+      const pageHeight = 9 * 96; // 9 inches * 96 DPI (content area)
+      const newPageCount = Math.max(1, Math.ceil(contentHeight / pageHeight));
 
-      // Update page count if needed
-      if (columnCount !== pageCount) {
-        setPageCount(columnCount);
-      }
-
-      // Update page numbers
-      Array.from({ length: columnCount }).forEach((_, i) => {
+      // Add page numbers
+      for (let i = 0; i < newPageCount; i++) {
         const pageNumber = document.createElement('div');
         pageNumber.className = 'page-number';
         pageNumber.textContent = `Page ${i + 1}`;
-        pageNumber.style.left = `${i * columnWidth}px`;
+        pageNumber.style.top = `${(i * pageHeight) + (pageHeight - 24)}px`; // 24px from bottom
         content.appendChild(pageNumber);
-      });
+      }
+
+      if (newPageCount !== pageCount) {
+        setPageCount(newPageCount);
+      }
     };
 
     const observer = new ResizeObserver(() => {
-      requestAnimationFrame(updatePageNumbers);
+      requestAnimationFrame(calculatePages);
     });
 
     if (contentRef.current) {
       observer.observe(contentRef.current);
+      calculatePages();
     }
 
     return () => observer.disconnect();
@@ -130,8 +134,8 @@ export function Editor({ initialContent, onChange }: EditorProps) {
   };
 
   return (
-    <LexicalComposer 
-      initialConfig={{ 
+    <LexicalComposer
+      initialConfig={{
         theme,
         nodes: [HeadingNode, ListNode, ListItemNode, LinkNode, TableNode, TableCellNode, TableRowNode],
         onError: (error) => console.error("Editor Error:", error),
@@ -140,7 +144,6 @@ export function Editor({ initialContent, onChange }: EditorProps) {
     >
       <div className="border rounded-lg shadow-sm">
         <div className="flex gap-2 p-2 border-b">
-          {/* Toolbar buttons */}
           <Button
             variant="ghost"
             size="sm"

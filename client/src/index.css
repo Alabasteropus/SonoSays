@@ -14,26 +14,24 @@
 
 @layer components {
   .editor-container {
-    @apply relative;
+    @apply relative bg-white shadow-lg mx-auto;
     width: 8.5in;
-    margin: 0 auto;
-    background: white;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    min-height: 11in;
   }
 
   .editor-content {
-    margin: 0 auto;
+    position: relative;
     padding: 1in;
     min-height: 11in;
-    column-width: 6.5in; /* Content width minus margins */
-    column-gap: 0;
+    columns: 1;
     column-fill: auto;
+    column-gap: 0;
   }
 
   .editor-input {
     @apply outline-none prose prose-sm dark:prose-invert max-w-none;
-    height: 9in; /* Content height minus margins */
-    overflow: hidden;
+    height: 9in; 
+    column-fill: auto;
   }
 
   .editor-placeholder {
@@ -46,15 +44,16 @@
     break-inside: avoid;
   }
 
-  /* Page numbers */
-  .editor-content::after {
-    content: "";
-    display: block;
-    break-after: column;
-    margin-bottom: 1in;
+  /* Page breaks and numbers */
+  .page {
+    height: 11in;
+    page-break-after: always;
+    position: relative;
+    break-inside: avoid;
   }
 
-  .page-number {
+  .page::after {
+    content: attr(data-page-number);
     @apply absolute bottom-4 w-full text-center text-sm text-muted-foreground;
   }
 
@@ -77,7 +76,7 @@
 
   .editor-heading-h1 {
     @apply text-4xl font-bold mt-8 mb-4;
-    break-before: column;
+    break-before: page;
   }
 
   .editor-heading-h2 {
