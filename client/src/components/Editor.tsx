@@ -15,7 +15,7 @@ import {
   UNDO_COMMAND,
   REDO_COMMAND,
 } from "lexical";
-import { $getRoot, $createParagraphNode, EditorThemeClasses } from "lexical";
+import { $getRoot, $createParagraphNode } from "lexical";
 import { HeadingNode } from "@lexical/rich-text";
 import { ListItemNode, ListNode } from "@lexical/list";
 import { LinkNode } from "@lexical/link";
@@ -38,7 +38,7 @@ interface EditorProps {
   onChange?: (content: string) => void;
 }
 
-const theme: EditorThemeClasses = {
+const theme = {
   ltr: "ltr",
   rtl: "rtl",
   placeholder: "editor-placeholder",
@@ -59,7 +59,6 @@ const theme: EditorThemeClasses = {
     ul: "editor-list-ul",
     listitem: "editor-listitem"
   },
-  image: "editor-image",
   link: "editor-link",
   text: {
     bold: "editor-text-bold",
@@ -67,49 +66,16 @@ const theme: EditorThemeClasses = {
     underline: "editor-text-underline",
     strikethrough: "editor-text-strikethrough",
     underlineStrikethrough: "editor-text-underlineStrikethrough",
-    code: "editor-text-code"
-  },
-  code: "editor-code",
-  codeHighlight: {
-    atrule: "editor-tokenAttr",
-    attr: "editor-tokenAttr",
-    boolean: "editor-tokenProperty",
-    builtin: "editor-tokenSelector",
-    cdata: "editor-tokenComment",
-    char: "editor-tokenSelector",
-    class: "editor-tokenFunction",
-    "class-name": "editor-tokenFunction",
-    comment: "editor-tokenComment",
-    constant: "editor-tokenProperty",
-    deleted: "editor-tokenProperty",
-    doctype: "editor-tokenComment",
-    entity: "editor-tokenOperator",
-    function: "editor-tokenFunction",
-    important: "editor-tokenVariable",
-    inserted: "editor-tokenSelector",
-    keyword: "editor-tokenAttr",
-    namespace: "editor-tokenVariable",
-    number: "editor-tokenProperty",
-    operator: "editor-tokenOperator",
-    prolog: "editor-tokenComment",
-    property: "editor-tokenProperty",
-    punctuation: "editor-tokenPunctuation",
-    regex: "editor-tokenVariable",
-    selector: "editor-tokenSelector",
-    string: "editor-tokenSelector",
-    symbol: "editor-tokenProperty",
-    tag: "editor-tokenProperty",
-    url: "editor-tokenOperator",
-    variable: "editor-tokenVariable"
   },
   root: "editor-root",
   page: "editor-page"
 };
 
 export function Editor({ initialContent, onChange }: EditorProps) {
-  const [pages, setPages] = useState<number>(1);
-  const editorRef = useRef<HTMLDivElement>(null);
   const [editor] = useState(() => initializeEditor());
+  const editorRef = useRef<HTMLDivElement>(null);
+  const [activePages, setActivePages] = useState([0]);
+  const lastContentHeights = useRef<number[]>([]);
 
   useEffect(() => {
     if (initialContent) {
@@ -117,31 +83,46 @@ export function Editor({ initialContent, onChange }: EditorProps) {
     }
   }, [editor, initialContent]);
 
-  useEffect(() => {
-    const checkPageBreaks = () => {
-      if (!editorRef.current) return;
-
-      const content = editorRef.current;
-      const pageHeight = 11 * 96; // 11 inches in pixels (assuming 96 DPI)
-      const totalHeight = content.scrollHeight;
-      const newPages = Math.ceil(totalHeight / pageHeight);
-
-      if (newPages !== pages) {
-        setPages(newPages);
-      }
-    };
-
-    const observer = new ResizeObserver(checkPageBreaks);
-    if (editorRef.current) {
-      observer.observe(editorRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, [pages]);
-
   const handleChange = () => {
     if (onChange) {
-      onChange(getEditorContent(editor));
+      const content = getEditorContent(editor);
+      onChange(content);
+
+      // Check for page breaks after content changes
+      if (editorRef.current) {
+        const contentDivs = Array.from(editorRef.current.querySelectorAll('.editor-input')) as HTMLElement[];
+        const pageHeight = 9 * 96; // 9 inches (content area) * 96 DPI
+        const newPageHeights: number[] = [];
+        let newActivePages = [...activePages];
+
+        contentDivs.forEach((div, index) => {
+          const contentHeight = div.scrollHeight;
+          newPageHeights[index] = contentHeight;
+
+          // Only create a new page if this is the last page and it overflows
+          if (index === contentDivs.length - 1 && contentHeight > pageHeight) {
+            const nextPageIndex = index + 1;
+            if (!newActivePages.includes(nextPageIndex)) {
+              newActivePages.push(nextPageIndex);
+            }
+          }
+
+          // Remove empty pages (except the first one)
+          if (index > 0 && contentHeight === 0) {
+            newActivePages = newActivePages.filter(p => p !== index);
+          }
+        });
+
+        // Keep pages in order
+        newActivePages.sort((a, b) => a - b);
+
+        // Only update if there are actual changes
+        if (JSON.stringify(newActivePages) !== JSON.stringify(activePages)) {
+          setActivePages(newActivePages);
+        }
+
+        lastContentHeights.current = newPageHeights;
+      }
     }
   };
 
@@ -158,7 +139,14 @@ export function Editor({ initialContent, onChange }: EditorProps) {
   };
 
   return (
-    <LexicalComposer initialConfig={{ theme, nodes: [HeadingNode, ListNode, ListItemNode, LinkNode, TableNode, TableCellNode, TableRowNode] }}>
+    <LexicalComposer 
+      initialConfig={{ 
+        theme,
+        nodes: [HeadingNode, ListNode, ListItemNode, LinkNode, TableNode, TableCellNode, TableRowNode],
+        onError: (error) => console.error("Editor Error:", error),
+        namespace: "WriteWithAI"
+      }}
+    >
       <div className="border rounded-lg shadow-sm">
         <div className="flex gap-2 p-2 border-b">
           <Button
@@ -229,22 +217,22 @@ export function Editor({ initialContent, onChange }: EditorProps) {
 
         <div className="p-4 min-h-[842px] bg-muted overflow-auto">
           <div className="editor-container mx-auto" ref={editorRef}>
-            {Array.from({ length: pages }).map((_, index) => (
-              <div key={index} className="page-container">
-                {index === 0 && (
-                  <RichTextPlugin
-                    contentEditable={
-                      <ContentEditable className="editor-input" />
-                    }
-                    placeholder={
+            {activePages.map((pageIndex) => (
+              <div key={pageIndex} className="page-container">
+                <RichTextPlugin
+                  contentEditable={
+                    <ContentEditable className="editor-input" />
+                  }
+                  placeholder={
+                    pageIndex === 0 ? (
                       <div className="editor-placeholder">
                         Start writing...
                       </div>
-                    }
-                    ErrorBoundary={() => null}
-                  />
-                )}
-                <div className="page-number">Page {index + 1}</div>
+                    ) : null
+                  }
+                  ErrorBoundary={() => null}
+                />
+                <div className="page-number">Page {pageIndex + 1}</div>
               </div>
             ))}
           </div>
