@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
@@ -42,7 +42,7 @@ const theme: EditorThemeClasses = {
   ltr: "ltr",
   rtl: "rtl",
   placeholder: "editor-placeholder",
-  paragraph: "editor-paragraph my-4",
+  paragraph: "editor-paragraph",
   quote: "editor-quote",
   heading: {
     h1: "editor-heading-h1",
@@ -107,31 +107,8 @@ const theme: EditorThemeClasses = {
 };
 
 export function Editor({ initialContent, onChange }: EditorProps) {
-  const nodes = [
-    HeadingNode,
-    ListNode,
-    ListItemNode,
-    LinkNode,
-    TableNode,
-    TableCellNode,
-    TableRowNode
-  ];
-
-  const config = {
-    namespace: "WriteWithAI",
-    theme,
-    nodes,
-    onError: (error: Error) => {
-      console.error("Editor Error:", error);
-    }
-  };
-
-  const handleChange = () => {
-    if (onChange) {
-      onChange(getEditorContent(editor));
-    }
-  };
-
+  const [pages, setPages] = useState<number>(1);
+  const editorRef = useRef<HTMLDivElement>(null);
   const [editor] = useState(() => initializeEditor());
 
   useEffect(() => {
@@ -139,6 +116,34 @@ export function Editor({ initialContent, onChange }: EditorProps) {
       setEditorContent(editor, initialContent);
     }
   }, [editor, initialContent]);
+
+  useEffect(() => {
+    const checkPageBreaks = () => {
+      if (!editorRef.current) return;
+
+      const content = editorRef.current;
+      const pageHeight = 11 * 96; // 11 inches in pixels (assuming 96 DPI)
+      const totalHeight = content.scrollHeight;
+      const newPages = Math.ceil(totalHeight / pageHeight);
+
+      if (newPages !== pages) {
+        setPages(newPages);
+      }
+    };
+
+    const observer = new ResizeObserver(checkPageBreaks);
+    if (editorRef.current) {
+      observer.observe(editorRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [pages]);
+
+  const handleChange = () => {
+    if (onChange) {
+      onChange(getEditorContent(editor));
+    }
+  };
 
   const formatText = (format: string) => {
     editor.update(() => {
@@ -153,7 +158,7 @@ export function Editor({ initialContent, onChange }: EditorProps) {
   };
 
   return (
-    <LexicalComposer initialConfig={config}>
+    <LexicalComposer initialConfig={{ theme, nodes: [HeadingNode, ListNode, ListItemNode, LinkNode, TableNode, TableCellNode, TableRowNode] }}>
       <div className="border rounded-lg shadow-sm">
         <div className="flex gap-2 p-2 border-b">
           <Button
@@ -223,20 +228,25 @@ export function Editor({ initialContent, onChange }: EditorProps) {
         </div>
 
         <div className="p-4 min-h-[842px] bg-muted overflow-auto">
-          <div className="editor-container mx-auto">
-            <div className="page-container">
-              <RichTextPlugin
-                contentEditable={
-                  <ContentEditable className="editor-input" />
-                }
-                placeholder={
-                  <div className="editor-placeholder">
-                    Start writing...
-                  </div>
-                }
-                ErrorBoundary={() => null}
-              />
-            </div>
+          <div className="editor-container mx-auto" ref={editorRef}>
+            {Array.from({ length: pages }).map((_, index) => (
+              <div key={index} className="page-container">
+                {index === 0 && (
+                  <RichTextPlugin
+                    contentEditable={
+                      <ContentEditable className="editor-input" />
+                    }
+                    placeholder={
+                      <div className="editor-placeholder">
+                        Start writing...
+                      </div>
+                    }
+                    ErrorBoundary={() => null}
+                  />
+                )}
+                <div className="page-number">Page {index + 1}</div>
+              </div>
+            ))}
           </div>
         </div>
       </div>

@@ -20,12 +20,20 @@
   .page-container {
     @apply bg-card shadow-lg mb-8 relative;
     min-height: 11in;
-    padding: 1in 1.25in;
     width: 8.5in;
+    padding: 1in 1.25in 1.5in;
+    margin-bottom: 2rem;
+    page-break-after: always;
+  }
+
+  .page-number {
+    @apply absolute bottom-4 w-full text-center text-sm text-muted-foreground;
   }
 
   .editor-input {
-    @apply outline-none min-h-[9in] prose prose-sm dark:prose-invert max-w-none;
+    @apply outline-none prose prose-sm dark:prose-invert max-w-none;
+    height: 9in;
+    overflow: hidden;
   }
 
   .editor-placeholder {
@@ -34,6 +42,7 @@
 
   .editor-paragraph {
     @apply my-4;
+    text-indent: 0.5in;
   }
 
   /* Rich text styling */
