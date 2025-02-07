@@ -4,10 +4,12 @@ const APP_URL = process.env.NODE_ENV === 'production'
   ? process.env.APP_URL 
   : 'http://localhost:5000';
 
+const REDIRECT_URI = `${APP_URL}/api/auth/google/callback`;
+
 const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET,
-  `${APP_URL}/api/auth/google/callback`
+  REDIRECT_URI
 );
 
 const docs = google.docs({ version: 'v1', auth: oauth2Client });
@@ -16,13 +18,14 @@ const drive = google.drive({ version: 'v3', auth: oauth2Client });
 export function getAuthUrl() {
   return oauth2Client.generateAuthUrl({
     access_type: 'offline',
-    prompt: 'consent', // Force getting refresh token
+    prompt: 'consent',
     scope: [
       'https://www.googleapis.com/auth/userinfo.profile',
       'https://www.googleapis.com/auth/userinfo.email',
       'https://www.googleapis.com/auth/documents',
       'https://www.googleapis.com/auth/drive.file'
-    ]
+    ],
+    include_granted_scopes: true
   });
 }
 
