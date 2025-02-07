@@ -6,7 +6,10 @@ import {
 export interface IStorage {
   // Document operations
   getDocument(id: number): Promise<Document | undefined>;
-  getAllDocuments(): Promise<Document[]>;
+  getAllDocuments(page?: number, limit?: number): Promise<{
+    documents: Document[];
+    total: number;
+  }>;
   createDocument(doc: InsertDocument): Promise<Document>;
   updateDocument(id: number, content: any): Promise<Document>;
 
@@ -30,9 +33,20 @@ export class MemStorage implements IStorage {
     return this.documents.get(id);
   }
 
-  async getAllDocuments(): Promise<Document[]> {
-    return Array.from(this.documents.values())
+  async getAllDocuments(page = 1, limit = 6): Promise<{
+    documents: Document[];
+    total: number;
+  }> {
+    const allDocs = Array.from(this.documents.values())
       .sort((a, b) => b.lastModified.getTime() - a.lastModified.getTime());
+
+    const start = (page - 1) * limit;
+    const end = start + limit;
+
+    return {
+      documents: allDocs.slice(start, end),
+      total: allDocs.length
+    };
   }
 
   async createDocument(doc: InsertDocument): Promise<Document> {

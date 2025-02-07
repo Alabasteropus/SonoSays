@@ -8,10 +8,21 @@ export function registerRoutes(app: Express): Server {
   const httpServer = createServer(app);
 
   // Document routes
-  app.get("/api/documents", async (_req, res) => {
+  app.get("/api/documents", async (req, res) => {
     try {
-      const documents = await storage.getAllDocuments();
-      res.json(documents);
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 6;
+
+      const { documents, total } = await storage.getAllDocuments(page, limit);
+      res.json({
+        documents,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit)
+        }
+      });
     } catch (error) {
       console.error("List documents error:", error);
       res.status(500).json({ error: "Failed to list documents" });

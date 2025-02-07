@@ -8,13 +8,27 @@ import {
   CardContent
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, Plus } from "lucide-react";
+import { FileText, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useState } from "react";
 import type { Document } from "@shared/schema";
 
+interface DocumentsResponse {
+  documents: Document[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
 export function DocumentList() {
-  const { data: documents, isLoading } = useQuery<Document[]>({
-    queryKey: ["/api/documents"],
+  const [page, setPage] = useState(1);
+  const limit = 6;
+
+  const { data, isLoading } = useQuery<DocumentsResponse>({
+    queryKey: [`/api/documents?page=${page}&limit=${limit}`],
   });
 
   if (isLoading) {
@@ -35,6 +49,8 @@ export function DocumentList() {
     );
   }
 
+  const { documents = [], pagination } = data || { documents: [], pagination: { page: 1, totalPages: 1 } };
+
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center">
@@ -48,7 +64,7 @@ export function DocumentList() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {(documents || []).map((doc) => (
+        {documents.map((doc) => (
           <Card key={doc.id}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -67,6 +83,32 @@ export function DocumentList() {
           </Card>
         ))}
       </div>
+
+      {pagination && pagination.totalPages > 1 && (
+        <div className="flex justify-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1}
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </Button>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">
+              Page {page} of {pagination.totalPages}
+            </span>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
+            disabled={page === pagination.totalPages}
+          >
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
