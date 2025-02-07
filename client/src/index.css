@@ -14,35 +14,48 @@
 
 @layer components {
   .editor-container {
-    @apply max-w-[8.5in] mx-auto;
-  }
-
-  .page-container {
-    @apply bg-card shadow-lg mb-8 relative;
-    min-height: 11in;
+    @apply relative;
     width: 8.5in;
-    padding: 1in 1.25in 1.5in;
-    margin-bottom: 2rem;
-    page-break-after: always;
+    margin: 0 auto;
+    background: white;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
   }
 
-  .page-number {
-    @apply absolute bottom-4 w-full text-center text-sm text-muted-foreground;
+  .editor-content {
+    margin: 0 auto;
+    padding: 1in;
+    min-height: 11in;
+    column-width: 6.5in; /* Content width minus margins */
+    column-gap: 0;
+    column-fill: auto;
   }
 
   .editor-input {
     @apply outline-none prose prose-sm dark:prose-invert max-w-none;
-    height: 9in;
+    height: 9in; /* Content height minus margins */
     overflow: hidden;
   }
 
   .editor-placeholder {
-    @apply absolute top-[1in] left-[1.25in] text-muted-foreground pointer-events-none;
+    @apply absolute top-[1in] left-[1in] text-muted-foreground pointer-events-none;
   }
 
   .editor-paragraph {
     @apply my-4;
     text-indent: 0.5in;
+    break-inside: avoid;
+  }
+
+  /* Page numbers */
+  .editor-content::after {
+    content: "";
+    display: block;
+    break-after: column;
+    margin-bottom: 1in;
+  }
+
+  .page-number {
+    @apply absolute bottom-4 w-full text-center text-sm text-muted-foreground;
   }
 
   /* Rich text styling */
@@ -64,22 +77,27 @@
 
   .editor-heading-h1 {
     @apply text-4xl font-bold mt-8 mb-4;
+    break-before: column;
   }
 
   .editor-heading-h2 {
     @apply text-3xl font-bold mt-6 mb-3;
+    break-inside: avoid;
   }
 
   .editor-list-ol {
     @apply list-decimal pl-6 my-4;
+    break-inside: avoid;
   }
 
   .editor-list-ul {
     @apply list-disc pl-6 my-4;
+    break-inside: avoid;
   }
 
   .editor-listitem {
     @apply my-1;
+    break-inside: avoid;
   }
 
   .editor-link {

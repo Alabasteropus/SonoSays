@@ -10,12 +10,10 @@ import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
 import { ListPlugin } from "@lexical/react/LexicalListPlugin";
 import { TablePlugin } from "@lexical/react/LexicalTablePlugin";
 import {
-  CLEAR_HISTORY_COMMAND,
   FORMAT_TEXT_COMMAND,
   UNDO_COMMAND,
   REDO_COMMAND,
 } from "lexical";
-import { $getRoot, $createParagraphNode } from "lexical";
 import { HeadingNode } from "@lexical/rich-text";
 import { ListItemNode, ListNode } from "@lexical/list";
 import { LinkNode } from "@lexical/link";
@@ -43,13 +41,9 @@ const theme = {
   rtl: "rtl",
   placeholder: "editor-placeholder",
   paragraph: "editor-paragraph",
-  quote: "editor-quote",
   heading: {
     h1: "editor-heading-h1",
-    h2: "editor-heading-h2",
-    h3: "editor-heading-h3",
-    h4: "editor-heading-h4",
-    h5: "editor-heading-h5"
+    h2: "editor-heading-h2"
   },
   list: {
     nested: {
@@ -66,16 +60,14 @@ const theme = {
     underline: "editor-text-underline",
     strikethrough: "editor-text-strikethrough",
     underlineStrikethrough: "editor-text-underlineStrikethrough",
-  },
-  root: "editor-root",
-  page: "editor-page"
+  }
 };
 
 export function Editor({ initialContent, onChange }: EditorProps) {
   const [editor] = useState(() => initializeEditor());
   const editorRef = useRef<HTMLDivElement>(null);
-  const [activePages, setActivePages] = useState([0]);
-  const lastContentHeights = useRef<number[]>([]);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [pageCount, setPageCount] = useState(1);
 
   useEffect(() => {
     if (initialContent) {
@@ -83,46 +75,45 @@ export function Editor({ initialContent, onChange }: EditorProps) {
     }
   }, [editor, initialContent]);
 
+  useEffect(() => {
+    const updatePageNumbers = () => {
+      if (!contentRef.current) return;
+
+      // Get the content element's position and dimensions
+      const content = contentRef.current;
+      const contentRect = content.getBoundingClientRect();
+      const columnWidth = contentRect.width;
+      const columnCount = Math.ceil(content.scrollWidth / columnWidth);
+
+      // Update page count if needed
+      if (columnCount !== pageCount) {
+        setPageCount(columnCount);
+      }
+
+      // Update page numbers
+      Array.from({ length: columnCount }).forEach((_, i) => {
+        const pageNumber = document.createElement('div');
+        pageNumber.className = 'page-number';
+        pageNumber.textContent = `Page ${i + 1}`;
+        pageNumber.style.left = `${i * columnWidth}px`;
+        content.appendChild(pageNumber);
+      });
+    };
+
+    const observer = new ResizeObserver(() => {
+      requestAnimationFrame(updatePageNumbers);
+    });
+
+    if (contentRef.current) {
+      observer.observe(contentRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [pageCount]);
+
   const handleChange = () => {
     if (onChange) {
-      const content = getEditorContent(editor);
-      onChange(content);
-
-      // Check for page breaks after content changes
-      if (editorRef.current) {
-        const contentDivs = Array.from(editorRef.current.querySelectorAll('.editor-input')) as HTMLElement[];
-        const pageHeight = 9 * 96; // 9 inches (content area) * 96 DPI
-        const newPageHeights: number[] = [];
-        let newActivePages = [...activePages];
-
-        contentDivs.forEach((div, index) => {
-          const contentHeight = div.scrollHeight;
-          newPageHeights[index] = contentHeight;
-
-          // Only create a new page if this is the last page and it overflows
-          if (index === contentDivs.length - 1 && contentHeight > pageHeight) {
-            const nextPageIndex = index + 1;
-            if (!newActivePages.includes(nextPageIndex)) {
-              newActivePages.push(nextPageIndex);
-            }
-          }
-
-          // Remove empty pages (except the first one)
-          if (index > 0 && contentHeight === 0) {
-            newActivePages = newActivePages.filter(p => p !== index);
-          }
-        });
-
-        // Keep pages in order
-        newActivePages.sort((a, b) => a - b);
-
-        // Only update if there are actual changes
-        if (JSON.stringify(newActivePages) !== JSON.stringify(activePages)) {
-          setActivePages(newActivePages);
-        }
-
-        lastContentHeights.current = newPageHeights;
-      }
+      onChange(getEditorContent(editor));
     }
   };
 
@@ -149,6 +140,7 @@ export function Editor({ initialContent, onChange }: EditorProps) {
     >
       <div className="border rounded-lg shadow-sm">
         <div className="flex gap-2 p-2 border-b">
+          {/* Toolbar buttons */}
           <Button
             variant="ghost"
             size="sm"
@@ -216,25 +208,18 @@ export function Editor({ initialContent, onChange }: EditorProps) {
         </div>
 
         <div className="p-4 min-h-[842px] bg-muted overflow-auto">
-          <div className="editor-container mx-auto" ref={editorRef}>
-            {activePages.map((pageIndex) => (
-              <div key={pageIndex} className="page-container">
-                <RichTextPlugin
-                  contentEditable={
-                    <ContentEditable className="editor-input" />
-                  }
-                  placeholder={
-                    pageIndex === 0 ? (
-                      <div className="editor-placeholder">
-                        Start writing...
-                      </div>
-                    ) : null
-                  }
-                  ErrorBoundary={() => null}
-                />
-                <div className="page-number">Page {pageIndex + 1}</div>
-              </div>
-            ))}
+          <div className="editor-container" ref={editorRef}>
+            <div className="editor-content" ref={contentRef}>
+              <RichTextPlugin
+                contentEditable={<ContentEditable className="editor-input" />}
+                placeholder={
+                  <div className="editor-placeholder">
+                    Start writing...
+                  </div>
+                }
+                ErrorBoundary={() => null}
+              />
+            </div>
           </div>
         </div>
       </div>
