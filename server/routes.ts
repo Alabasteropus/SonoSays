@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import * as google from "./lib/google";
@@ -16,6 +16,10 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/auth/google/callback", async (req, res) => {
     try {
       const code = req.query.code as string;
+      if (!code) {
+        return res.status(400).json({ error: "No authorization code provided" });
+      }
+
       const tokens = await google.getTokens(code);
       const userInfo = await google.getUserInfo(tokens.access_token!);
 
@@ -40,9 +44,48 @@ export function registerRoutes(app: Express): Server {
       res.redirect("/");
     } catch (error) {
       console.error("Auth error:", error);
-      res.status(500).json({ error: "Authentication failed" });
+      res.redirect("/?error=auth_failed");
     }
   });
+
+  // Add middleware to handle token refresh
+  async function refreshTokenIfNeeded(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return next();
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return next();
+      }
+
+      try {
+        // Test current access token
+        await google.getUserInfo(user.accessToken);
+        return next();
+      } catch (error) {
+        if (error.response?.status === 401) {
+          // Token expired, try to refresh
+          const credentials = await google.refreshAccessToken(user.refreshToken);
+          await storage.updateUserTokens(
+            user.id,
+            credentials.access_token!,
+            user.refreshToken // Keep existing refresh token
+          );
+        }
+      }
+      next();
+    } catch (error) {
+      console.error("Token refresh error:", error);
+      next(error);
+    }
+  }
+
+  // Add the middleware to all Google-related routes
+  app.use('/api/documents', refreshTokenIfNeeded);
+
 
   // Document routes
   app.get("/api/documents", async (req, res) => {
