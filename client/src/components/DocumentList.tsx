@@ -12,19 +12,8 @@ import { FileText, Plus } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Document } from "@shared/schema";
 
-interface GoogleDoc {
-  id: string;
-  name: string;
-  modifiedTime: string;
-}
-
-interface DocumentsResponse {
-  google: GoogleDoc[];
-  local: Document[];
-}
-
 export function DocumentList() {
-  const { data, isLoading } = useQuery<DocumentsResponse>({
+  const { data: documents, isLoading } = useQuery<Document[]>({
     queryKey: ["/api/documents"],
   });
 
@@ -46,8 +35,6 @@ export function DocumentList() {
     );
   }
 
-  const { google = [], local = [] } = data || { google: [], local: [] };
-
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center">
@@ -61,7 +48,7 @@ export function DocumentList() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {local.map((doc) => (
+        {(documents || []).map((doc) => (
           <Card key={doc.id}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -69,32 +56,12 @@ export function DocumentList() {
                 {doc.title}
               </CardTitle>
               <CardDescription>
-                Last edited {new Date(doc.lastSynced!).toLocaleDateString()}
+                Last modified {new Date(doc.lastModified).toLocaleDateString()}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Button variant="secondary" asChild className="w-full">
                 <Link href={`/document/${doc.id}`}>Open</Link>
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
-
-        {google.map((doc) => (
-          <Card key={doc.id}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="w-4 h-4" />
-                {doc.name}
-              </CardTitle>
-              <CardDescription>
-                Google Doc • Last edited{" "}
-                {new Date(doc.modifiedTime).toLocaleDateString()}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button variant="secondary" asChild className="w-full">
-                <Link href={`/google/${doc.id}`}>Open</Link>
               </Button>
             </CardContent>
           </Card>
