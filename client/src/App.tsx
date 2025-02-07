@@ -4,6 +4,7 @@ import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import Home from "@/pages/Home";
 import Document from "@/pages/Document";
+import NewDocument from "@/pages/NewDocument";
 import NotFound from "@/pages/not-found";
 
 function AppLayout({ children }: { children: React.ReactNode }) {
@@ -36,6 +37,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/new" component={NewDocument} />
       <Route path="/document/:id" component={Document} />
       <Route component={NotFound} />
     </Switch>
