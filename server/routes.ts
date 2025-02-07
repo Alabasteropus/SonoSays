@@ -9,13 +9,28 @@ export function registerRoutes(app: Express): Server {
   const httpServer = createServer(app);
 
   // Auth routes
-  app.get("/api/auth/google", (_req, res) => {
-    res.redirect(google.getAuthUrl());
+  app.get("/api/auth/google", (req, res) => {
+    try {
+      const authUrl = google.getAuthUrl();
+      // Store the state in session for verification
+      req.session.oauthState = authUrl.split('state=')[1].split('&')[0];
+      res.redirect(authUrl);
+    } catch (error) {
+      console.error("Auth URL generation error:", error);
+      res.redirect("/?error=auth_failed");
+    }
   });
 
   app.get("/api/auth/google/callback", async (req, res) => {
     try {
       const code = req.query.code as string;
+      const state = req.query.state as string;
+
+      // Verify state parameter to prevent CSRF
+      if (!state || state !== req.session.oauthState) {
+        return res.status(400).json({ error: "Invalid state parameter" });
+      }
+
       if (!code) {
         return res.status(400).json({ error: "No authorization code provided" });
       }
@@ -40,6 +55,8 @@ export function registerRoutes(app: Express): Server {
         );
       }
 
+      // Clear the OAuth state from session
+      delete req.session.oauthState;
       req.session.userId = user.id;
       res.redirect("/");
     } catch (error) {

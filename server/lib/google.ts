@@ -1,5 +1,7 @@
 import { google } from 'googleapis';
+import { randomBytes } from 'crypto';
 
+// Use HTTPS for production and HTTP for development
 const APP_URL = process.env.NODE_ENV === 'production' 
   ? process.env.APP_URL 
   : 'http://localhost:5000';
@@ -16,6 +18,9 @@ const docs = google.docs({ version: 'v1', auth: oauth2Client });
 const drive = google.drive({ version: 'v3', auth: oauth2Client });
 
 export function getAuthUrl() {
+  // Generate a random state parameter to prevent CSRF attacks
+  const state = randomBytes(16).toString('hex');
+
   return oauth2Client.generateAuthUrl({
     access_type: 'offline',
     prompt: 'consent',
@@ -25,7 +30,8 @@ export function getAuthUrl() {
       'https://www.googleapis.com/auth/documents',
       'https://www.googleapis.com/auth/drive.file'
     ],
-    include_granted_scopes: true
+    include_granted_scopes: true,
+    state // Add state parameter for security
   });
 }
 
