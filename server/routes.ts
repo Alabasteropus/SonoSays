@@ -48,6 +48,17 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Add sign out route after the Google callback route
+  app.post("/api/auth/signout", (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        console.error("Session destruction error:", err);
+        return res.status(500).json({ error: "Failed to sign out" });
+      }
+      res.sendStatus(200);
+    });
+  });
+
   // Add middleware to handle token refresh
   async function refreshTokenIfNeeded(req: Request, res: Response, next: NextFunction) {
     try {
