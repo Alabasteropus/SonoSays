@@ -63,6 +63,10 @@ const theme = {
   }
 };
 
+const FONT_SIZE = 12; // pt
+const LINE_HEIGHT = 1.5;
+const PIXELS_PER_PT = 1.333333; // conversion factor
+
 export function Editor({ initialContent, onChange }: EditorProps) {
   const [editor] = useState(() => initializeEditor());
   const editorRef = useRef<HTMLDivElement>(null);
@@ -79,10 +83,18 @@ export function Editor({ initialContent, onChange }: EditorProps) {
     const calculatePages = () => {
       if (!contentRef.current) return;
 
+      // Get content metrics
       const content = contentRef.current;
+      const lineHeightPx = FONT_SIZE * LINE_HEIGHT * PIXELS_PER_PT;
       const contentHeight = content.scrollHeight;
-      const pageHeight = 9 * 96; // 9 inches * 96 DPI (content area)
-      const newPageCount = Math.max(1, Math.ceil(contentHeight / pageHeight));
+      const pageContentHeight = 9 * 96; // 9 inches * 96 DPI (content area)
+
+      // Calculate how many lines fit per page
+      const linesPerPage = Math.floor(pageContentHeight / lineHeightPx);
+
+      // Calculate total pages needed
+      const totalLines = Math.ceil(contentHeight / lineHeightPx);
+      const newPageCount = Math.max(1, Math.ceil(totalLines / linesPerPage));
 
       if (newPageCount !== pageCount) {
         setPageCount(newPageCount);

@@ -14,21 +14,20 @@
 
 @layer components {
   .editor-container {
-    @apply relative bg-white mx-auto;
+    @apply relative mx-auto;
     width: 8.5in;
   }
 
   .editor-content {
     position: relative;
-    min-height: 11in;
     columns: 1;
     column-fill: auto;
   }
 
   .editor-input {
     @apply outline-none prose prose-sm dark:prose-invert max-w-none;
-    height: 9in;
-    column-fill: auto;
+    line-height: 1.5;
+    font-size: 12pt;
   }
 
   .editor-placeholder {
@@ -36,27 +35,30 @@
   }
 
   .editor-paragraph {
-    @apply my-4;
+    @apply my-0;
     text-indent: 0.5in;
     break-inside: avoid;
+    min-height: 1.5em;
   }
 
   /* Page styling */
   .page-container {
-    @apply bg-white shadow-lg mb-8;
+    @apply bg-white shadow-lg;
     width: 8.5in;
     height: 11in;
     padding: 1in;
     position: relative;
     margin-bottom: 2rem;
-    break-before: page;
-    break-after: page;
+    break-before: always;
+    break-after: always;
     break-inside: avoid;
   }
 
   .page-content {
     height: 9in;
+    width: 6.5in; /* 8.5in - 2in margins */
     overflow: hidden;
+    line-height: 1.5;
   }
 
   .page-number {
