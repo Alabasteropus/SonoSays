@@ -59,7 +59,7 @@ const theme = {
     italic: "editor-text-italic",
     underline: "editor-text-underline",
     strikethrough: "editor-text-strikethrough",
-    underlineStrikethrough: "editor-text-underlineStrikethrough",
+    underlineStrikethrough: "editor-text-underlineStrikethrough"
   }
 };
 
@@ -79,24 +79,10 @@ export function Editor({ initialContent, onChange }: EditorProps) {
     const calculatePages = () => {
       if (!contentRef.current) return;
 
-      // Remove existing page numbers
-      const existingNumbers = contentRef.current.querySelectorAll('.page-number');
-      existingNumbers.forEach(num => num.remove());
-
-      // Get content height and calculate pages
       const content = contentRef.current;
       const contentHeight = content.scrollHeight;
       const pageHeight = 9 * 96; // 9 inches * 96 DPI (content area)
       const newPageCount = Math.max(1, Math.ceil(contentHeight / pageHeight));
-
-      // Add page numbers
-      for (let i = 0; i < newPageCount; i++) {
-        const pageNumber = document.createElement('div');
-        pageNumber.className = 'page-number';
-        pageNumber.textContent = `Page ${i + 1}`;
-        pageNumber.style.top = `${(i * pageHeight) + (pageHeight - 24)}px`; // 24px from bottom
-        content.appendChild(pageNumber);
-      }
 
       if (newPageCount !== pageCount) {
         setPageCount(newPageCount);
@@ -212,17 +198,24 @@ export function Editor({ initialContent, onChange }: EditorProps) {
 
         <div className="p-4 min-h-[842px] bg-muted overflow-auto">
           <div className="editor-container" ref={editorRef}>
-            <div className="editor-content" ref={contentRef}>
-              <RichTextPlugin
-                contentEditable={<ContentEditable className="editor-input" />}
-                placeholder={
-                  <div className="editor-placeholder">
-                    Start writing...
+            {Array.from({ length: pageCount }).map((_, index) => (
+              <div key={index} className="page-container">
+                <div className="page-content">
+                  <div className="editor-content" ref={contentRef}>
+                    <RichTextPlugin
+                      contentEditable={<ContentEditable className="editor-input" />}
+                      placeholder={
+                        <div className="editor-placeholder">
+                          Start writing...
+                        </div>
+                      }
+                      ErrorBoundary={() => null}
+                    />
                   </div>
-                }
-                ErrorBoundary={() => null}
-              />
-            </div>
+                </div>
+                <div className="page-number">Page {index + 1}</div>
+              </div>
+            ))}
           </div>
         </div>
       </div>

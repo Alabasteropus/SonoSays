@@ -14,23 +14,20 @@
 
 @layer components {
   .editor-container {
-    @apply relative bg-white shadow-lg mx-auto;
+    @apply relative bg-white mx-auto;
     width: 8.5in;
-    min-height: 11in;
   }
 
   .editor-content {
     position: relative;
-    padding: 1in;
     min-height: 11in;
     columns: 1;
     column-fill: auto;
-    column-gap: 0;
   }
 
   .editor-input {
     @apply outline-none prose prose-sm dark:prose-invert max-w-none;
-    height: 9in; 
+    height: 9in;
     column-fill: auto;
   }
 
@@ -44,17 +41,31 @@
     break-inside: avoid;
   }
 
-  /* Page breaks and numbers */
-  .page {
+  /* Page styling */
+  .page-container {
+    @apply bg-white shadow-lg mb-8;
+    width: 8.5in;
     height: 11in;
-    page-break-after: always;
+    padding: 1in;
     position: relative;
+    margin-bottom: 2rem;
+    break-before: page;
+    break-after: page;
     break-inside: avoid;
   }
 
-  .page::after {
-    content: attr(data-page-number);
-    @apply absolute bottom-4 w-full text-center text-sm text-muted-foreground;
+  .page-content {
+    height: 9in;
+    overflow: hidden;
+  }
+
+  .page-number {
+    @apply text-sm text-muted-foreground;
+    position: absolute;
+    bottom: 0.5in;
+    left: 0;
+    right: 0;
+    text-align: center;
   }
 
   /* Rich text styling */
